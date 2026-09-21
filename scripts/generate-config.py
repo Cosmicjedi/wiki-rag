@@ -222,7 +222,7 @@ def _generate_yaml(env_source: Path | None) -> str:
     rate_lim, rate_lim_src = _get("ENABLE_RATE_LIMITING", "true")
 
     coll_name, coll_name_src = _get("COLLECTION_NAME", "your_collection_name")
-    index_vendor, index_vendor_src = _get("INDEX_VENDOR", "milvus")
+    index_vendor, index_vendor_src = _get("INDEX_VENDOR", "qdrant")
 
     # General API base URL and model — per-model overrides are YAML-only (no env vars).
     openai_base, openai_base_src = _get("OPENAI_API_BASE", "https://api.openai.com/v1")
@@ -253,8 +253,8 @@ def _generate_yaml(env_source: Path | None) -> str:
     mcp_base, mcp_base_src = _get("MCP_API_BASE", "0.0.0.0:8081")
     mcp_auth_req, mcp_auth_req_src = _get("MCP_AUTH_REQUIRED", "true")
 
-    milvus_url, milvus_url_src = _get("MILVUS_URL", "http://0.0.0.0:19530")
-    milvus_timeout, milvus_timeout_src = _get("MILVUS_TIMEOUT", "30")
+    qdrant_url, qdrant_url_src = _get("QDRANT_URL", "http://localhost:6333")
+    qdrant_timeout, qdrant_timeout_src = _get("QDRANT_TIMEOUT", "30")
 
     ls_tracing, ls_tracing_src = _get("LANGSMITH_TRACING", "false")
     ls_prompts, ls_prompts_src = _get("LANGSMITH_PROMPTS", "false")
@@ -407,14 +407,14 @@ def _generate_yaml(env_source: Path | None) -> str:
         "",
     ]
 
-    # milvus
+    # qdrant
     lines += [
         "# ---------------------------------------------------------------------------",
-        "# Milvus vector store (non-secret connection settings)",
+        "# Qdrant vector store (non-secret connection settings)",
         "# ---------------------------------------------------------------------------",
-        "milvus:",
-        f"  url: {_fmt_str(milvus_url)}{_cmt(milvus_url_src, 1)}",
-        f"  timeout: {_fmt_float(milvus_timeout, default=30.0)}{_cmt(milvus_timeout_src, 1)}",
+        "qdrant:",
+        f"  url: {_fmt_str(qdrant_url)}{_cmt(qdrant_url_src, 1)}",
+        f"  timeout: {_fmt_float(qdrant_timeout, default=30.0)}{_cmt(qdrant_timeout_src, 1)}",
         "",
     ]
 

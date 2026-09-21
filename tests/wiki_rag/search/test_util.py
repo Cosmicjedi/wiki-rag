@@ -287,7 +287,7 @@ def _make_doc(
     doc_title: str = "Doc",
     **extra,
 ) -> dict:
-    """Build a retrieved doc shaped like MilvusVector.retrieve() output."""
+    """Build a retrieved doc shaped like QdrantVector.retrieve() output."""
     return {
         "id": id,
         "distance": distance,

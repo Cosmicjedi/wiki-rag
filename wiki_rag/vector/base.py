@@ -259,11 +259,11 @@ def load_vector_store(name: str) -> "BaseVector":
     vector-store constructor so that backends can read connection settings
     without calling ``os.getenv()`` directly.
 
-    For example ``"milvus"`` will instantiate
-    :class:`wiki_rag.vector.milvus.MilvusVector`.
+    For example ``"qdrant"`` will instantiate
+    :class:`wiki_rag.vector.qdrant.QdrantVector`.
 
     Args:
-        name: Name of the vector store backend (e.g. ``"milvus"``).
+        name: Name of the vector store backend (e.g. ``"qdrant"``).
 
     Returns:
         Initialised :class:`BaseVector` instance.

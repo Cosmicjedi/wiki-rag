@@ -1,19 +1,23 @@
 services:
-  # Include the contents of milvus-standalone.yml
-  etcd:
-    extends:
-      file: ./milvus-standalone.yml
-      service: etcd
-
-  minio:
-    extends:
-      file: ./milvus-standalone.yml
-      service: minio
-
-  standalone:
-    extends:
-      file: ./milvus-standalone.yml
-      service: standalone
+  # The vector store. A single container: Qdrant needs no etcd or object
+  # storage. Data is kept in ./volumes/qdrant so it survives recreates.
+  qdrant:
+    image: qdrant/qdrant:v1.19.0
+    container_name: qdrant
+    volumes:
+      - ./volumes/qdrant:/qdrant/storage
+    ports:
+      - "6333:6333"   # REST (what wiki-rag uses)
+      - "6334:6334"   # gRPC (optional, for other clients)
+    # To require an API key, uncomment both this and QDRANT_API_KEY in .env:
+    # environment:
+    #   QDRANT__SERVICE__API_KEY: "<<<YOUR_QDRANT_API_KEY>>>"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   # Define the wiki-rag service
   wiki-rag:
@@ -24,9 +28,10 @@ services:
       - ./config.yml:/app/config.yml
       - ./.env:/app/.env
     environment:
-      MILVUS_URL: http://milvus-standalone:19530
+      QDRANT_URL: http://qdrant:6333
       LOG_LEVEL: info
     ports:
       - "8081:8080"
     depends_on:
-      - standalone
+      qdrant:
+        condition: service_healthy

@@ -23,12 +23,12 @@
 # search.contextualisation.api_base, and search.hyde.api_base / search.hyde.model.
 
 # ---------------------------------------------------------------------------
-# Milvus credentials
-# For a URL with embedded credentials (legacy):
-#   MILVUS_URL="https://user:password@host:port"  # pragma: allowlist secret
-# For the recommended split approach, set the token separately:
+# Qdrant credentials
+# Only needed when the Qdrant server has an API key configured (Qdrant Cloud,
+# or a self-hosted server started with QDRANT__SERVICE__API_KEY). The server
+# URL itself is not a secret: configure it in config.yml under qdrant.url.
 # ---------------------------------------------------------------------------
-# MILVUS_TOKEN="<<<YOUR_MILVUS_TOKEN_OR_USER:PASSWORD>>>"  # pragma: allowlist secret
+# QDRANT_API_KEY="<<<YOUR_QDRANT_API_KEY>>>"  # pragma: allowlist secret
 
 # ---------------------------------------------------------------------------
 # Bearer token authentication (used by wr-server and wr-mcp)

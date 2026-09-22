@@ -15,7 +15,7 @@ To get started with Wiki-RAG, ensure you have the following:
 - Git
 - Python 3.12 or later with pip (Python package installer)
 - [Docker](https://www.docker.com/get-started) (if you intend to run the project using Docker)
-- [Milvus 2.6.14](https://milvus.io/docs/release_notes.md) or later (for vector similarity search). Standalone or Distributed deployments are supported. Lite deployments are not supported. It's highly recommended to use the [Docker Compose deployment](https://milvus.io/docs/install_standalone-docker-compose.md) specially for testing and development purposes.
+- [Qdrant 1.10](https://qdrant.tech/documentation/) or later (for vector similarity search; sparse vectors with the IDF modifier are required for the keyword channel of the hybrid search). A single container is enough; see the [Docker Compose](#running-with-docker-compose-all-in-one) section below or run `docker run -p 6333:6333 -v $(pwd)/volumes/qdrant:/qdrant/storage qdrant/qdrant:v1.19.0`. Qdrant Cloud works too (set `QDRANT_API_KEY`).
 
 ## Configuration
 
@@ -70,13 +70,13 @@ To get started with Wiki-RAG, ensure you have the following:
 5. **Run the Application**:
    The application comes with four different executables:
    - `wr-load`: Will parse all the configured pages in the source Mediawiki site, extracting contents and other important metadata. All the generated information will be stored into a JSON file in the `data` directory. Supports `--incremental` mode to only re-fetch changed pages since a previous dump.
-   - `wr-index`: In charge of creating (or incrementally updating) the collection in the vector index (Milvus) with all the information extracted in the previous step. Automatically uses incremental mode for incremental dumps; use `--full` to force a full reindex. Chunking supported.
+   - `wr-index`: In charge of creating (or incrementally updating) the collection in the vector index (Qdrant) with all the information extracted in the previous step. Automatically uses incremental mode for incremental dumps; use `--full` to force a full reindex. Chunking supported.
    - `wr-search`: A tiny CLI utility to perform searches against the RAG system from the command line.
    - `wr-server`: A comprehensive and secure web service (documented with OpenAPI) that allows users to interact with the RAG system using the OpenAI API (`v1/models` and `v1/chat/completions` endpoints) as if it were a large language model (LLM). Protected with bearer tokens (local list via `AUTH_TOKENS` and/or remote delegation via `AUTH_URL`). Supports streaming responses.
    - `wr-mcp`: A complete built-in MCP server that allows you to access to various parts of Wiki-RAG like prompts (system and use prompt with placeholders), resources (access to the source parsed documents) and tools (retrieve, optimise and generate) using the [MCP Protocol](https://modelcontextprotocol.io/). Uses the same authentication schema as `wr-server`.
    - `wr-cleanup.sh`: A standalone Bash script to prune old dump files. Run `./scripts/wr-cleanup.sh --help` for full usage.
 
-### Running with Docker (Milvus elsewhere)
+### Running with Docker (Qdrant elsewhere)
 
 1. Pull the image from GitHub [Container Registry](https://github.com/moodlehq/wiki-rag/pkgs/container/wiki-rag):
    ```bash
@@ -91,34 +91,25 @@ To get started with Wiki-RAG, ensure you have the following:
        --volume $(pwd)/data:/app/data \
        --volume $(pwd)/config.yml:/app/config.yml \
        --volume $(pwd)/.env:/app/.env \
-       --env MILVUS_URL=http://milvus-standalone:19530 \
-       --network milvus \
+       --env QDRANT_URL=http://qdrant:6333 \
+       --network qdrant \
        --publish 8080:8080 \
        --env LOG_LEVEL=info \
        --name wiki-rag \
        wiki-rag:latest
    ```
    - **Note 3:** The command above will start the `wr-server` automatically, listening on the configured port (8080). All secrets (including API keys) are loaded from the mounted `.env` file. If, instead, you want to execute any of the other commands (`wr-load`, `wr-index`, `wr-search`), you can specify it as the last argument.
-   - **Note 4:** The 2 lines related to Milvus are required to connect to the Milvus server **if also running in Docker**. If it's running elsewhere, you can replace the `MILVUS_URL` with the appropriate URL or configure it in the `config.yml` file instead and proceed to remove the `--network` argument.
+   - **Note 4:** The 2 lines related to Qdrant are required to connect to the Qdrant server **if also running in Docker** (on a network named `qdrant`, with the container named `qdrant`). If it's running elsewhere, you can replace the `QDRANT_URL` with the appropriate URL or configure it in the `config.yml` file (`qdrant.url`) instead and proceed to remove the `--network` argument. If the server requires an API key, add it to `.env` as `QDRANT_API_KEY`.
    - **Note 5:** You can use `docker logs wiki-rag` to check the logs of the running container (`wr-server` logs).
    - **Note 6:** When running the `wr-server`, you still can execute any of the commands (`wr-load`, `wr-index`, `wr-search`) using `docker exec -it wiki-rag <command>`.
    - **Note 7:** To stop and remove the container, you can use `docker stop wiki-rag`.
 
 ### Running with Docker Compose (all-in-one)
 
-1. Download the Milvus Docker Compose file:
-   ```bash
-   wget https://github.com/milvus-io/milvus/releases/download/v2.6.17/milvus-standalone-docker-compose.yml -O milvus-standalone.yml
-   ```
-   OR
-   ```bash
-   curl https://github.com/milvus-io/milvus/releases/download/v2.6.17/milvus-standalone-docker-compose.yml -o milvus-standalone.yml
-   ```
-
-2. Run Wiki-RAG own Docker Compose file:
+1. Run Wiki-RAG own Docker Compose file (it includes the Qdrant server, nothing else to download):
    - **Note 1:** Ensure both `config.yml` and `.env` have been set up by following the [Configuration](#configuration) instructions above. `config.yml` is required and must be present in the same directory. Secrets can be supplied via a `.env` file or as environment variables in your compose override — use whichever suits your deployment.
    - **Note 2:** The `data` directory will be created in the current directory, and it will store all the data generated by the `wr-load` command. If the `LOADER_DUMP_PATH` is set, you will have to change the volume mapping accordingly.
-   - **Note 3:** The `volumes` directory will be created in the current directory, and it will store all the data required by the Milvus containers.
+   - **Note 3:** The `volumes` directory will be created in the current directory, and it will store all the data required by the Qdrant container. The `wiki-rag` container is pointed at it via `QDRANT_URL=http://qdrant:6333`, so `qdrant.url` in `config.yml` is not used there.
    ```bash
    docker compose up -d
    ```
@@ -137,7 +128,7 @@ To get started with Wiki-RAG, ensure you have the following:
    * The whole KB is stored in a (dated) JSON file for later use, access and analysis.
    * Supports incremental loading and indexing, processing only changed pages since a previous dump.
    * Metadata-rich information containing parent-ship relations, sources and other useful information.
-   * Loads the KB into a vector database (Milvus) for fast retrieval.
+   * Loads the KB into a vector database (Qdrant) for fast retrieval.
    * Hybrid retrieval using both vector and keyword search with fusion reranking.
    * Contextual-aware query rewrite for a better chat experience.
    * Optional HyDE (Hypothetical Document Embeddings) support, with configurable number of passages.

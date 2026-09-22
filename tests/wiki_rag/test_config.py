@@ -237,9 +237,9 @@ class TestLoadConfigEnvOnly(unittest.TestCase):
         cfg = self._load("load")
         self.assertEqual("test_col", cfg.collection_name)
 
-    def test_index_vendor_defaults_to_milvus(self):
+    def test_index_vendor_defaults_to_qdrant(self):
         cfg = self._load("load")
-        self.assertEqual("milvus", cfg.index_vendor)
+        self.assertEqual("qdrant", cfg.index_vendor)
 
     def test_embedding_max_retries_defaults_to_three(self):
         cfg = self._load("index")
@@ -551,15 +551,38 @@ class TestLoadConfigSecretsEnvOnly(unittest.TestCase):
         self.assertIsNone(cfg.openai_api_key)
         self.assertIsNone(cfg.langsmith_api_key)
         self.assertIsNone(cfg.langfuse_secret_key)
-        self.assertIsNone(cfg.milvus_token)
+        self.assertIsNone(cfg.qdrant_api_key)
         # openai_api_base is now non-secret; absent for "load" command (not required).
         self.assertEqual("", cfg.openai_api_base)
 
-    def test_milvus_token_from_env(self):
-        env = {**_MINIMAL_ENV_ALL, "MILVUS_TOKEN": "mytoken"}  # pragma: allowlist secret
+    def test_qdrant_api_key_from_env(self):
+        env = {**_MINIMAL_ENV_ALL, "QDRANT_API_KEY": "mykey"}  # pragma: allowlist secret
         with patch("wiki_rag.config.load_dotenv"), patch.dict(os.environ, env, clear=True):
             cfg = load_config(command="load", config_path=Path("/nonexistent/config.yml"))
-        self.assertEqual("mytoken", cfg.milvus_token)
+        self.assertEqual("mykey", cfg.qdrant_api_key)
+
+    def test_qdrant_connection_settings_from_env(self):
+        env = {**_MINIMAL_ENV_ALL, "QDRANT_URL": "http://qdrant:6333", "QDRANT_TIMEOUT": "7.5"}
+        with patch("wiki_rag.config.load_dotenv"), patch.dict(os.environ, env, clear=True):
+            cfg = load_config(command="load", config_path=Path("/nonexistent/config.yml"))
+        self.assertEqual("http://qdrant:6333", cfg.qdrant.url)
+        self.assertEqual(7.5, cfg.qdrant.timeout)
+
+    def test_qdrant_api_key_never_read_from_yaml(self):
+        config_path = Path(tempfile.mkstemp(suffix=".yml")[1])
+        config_path.write_text(
+            "qdrant:\n"
+            '  url: "http://from-yaml:6333"\n'
+            '  api_key: "leaked"\n'
+            'QDRANT_API_KEY: "leaked"\n'
+        )
+        try:
+            with patch("wiki_rag.config.load_dotenv"), patch.dict(os.environ, _MINIMAL_ENV_ALL, clear=True):
+                cfg = load_config(command="load", config_path=config_path)
+        finally:
+            config_path.unlink()
+        self.assertEqual("http://from-yaml:6333", cfg.qdrant.url)
+        self.assertIsNone(cfg.qdrant_api_key)
 
 
 class TestLoadConfigObservabilityValidation(unittest.TestCase):

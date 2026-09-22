@@ -69,7 +69,7 @@ _SECRETS: frozenset[str] = frozenset({
     "LANGFUSE_PUBLIC_KEY",
     "AUTH_TOKENS",
     "AUTH_URL",
-    "MILVUS_TOKEN",
+    "QDRANT_API_KEY",
     "CHROMA_URL",
     "CHROMA_PATH",
 })
@@ -149,8 +149,8 @@ class McpConfig:
 
 
 @dataclasses.dataclass(frozen=True)
-class MilvusConfig:
-    """Milvus vector store connection configuration (non-secret part)."""
+class QdrantConfig:
+    """Qdrant vector store connection configuration (non-secret part)."""
 
     url: str
     timeout: float
@@ -222,7 +222,7 @@ class Config:
     search: SearchConfig
     wrapper: WrapperConfig
     mcp: McpConfig
-    milvus: MilvusConfig
+    qdrant: QdrantConfig
     langsmith: LangsmithConfig
     langfuse: LangfuseConfig
     user_agent: str
@@ -236,7 +236,7 @@ class Config:
     langfuse_public_key: str | None
     auth_tokens: list[str]   # parsed from comma-separated env value
     auth_url: str | None
-    milvus_token: str | None
+    qdrant_api_key: str | None
     chroma_url: str | None
     chroma_path: str | None
 
@@ -502,7 +502,7 @@ def load_config(command: str, config_path: Path | None = None) -> Config:
     mediawiki_namespaces_raw = _v("MEDIAWIKI_NAMESPACES", "mediawiki.namespaces")
     loader_dump_path_raw = _v("LOADER_DUMP_PATH", "loader.dump_path", "")
     collection_name = _v("COLLECTION_NAME", "collection.name")
-    index_vendor = _v("INDEX_VENDOR", "index.vendor", "milvus")
+    index_vendor = _v("INDEX_VENDOR", "index.vendor", "qdrant")
     chunk_strategy_raw = _v("INDEX_CHUNK_STRATEGY", "index.chunking.strategy", "none")
     chunk_max_bytes_raw = _v("INDEX_CHUNK_MAX_BYTES", "index.chunking.max_bytes", "3000")
     chunk_overlap_raw = _v("INDEX_CHUNK_OVERLAP_BYTES", "index.chunking.overlap_bytes", "300")
@@ -559,9 +559,9 @@ def load_config(command: str, config_path: Path | None = None) -> Config:
     mcp_api_base = _v("MCP_API_BASE", "mcp.api_base")
     mcp_auth_required_raw = _v("MCP_AUTH_REQUIRED", "mcp.auth_required", "true")
 
-    # --- Milvus (non-secret connection settings) ---
-    milvus_url = _v("MILVUS_URL", "milvus.url", "")
-    milvus_timeout_raw = _v("MILVUS_TIMEOUT", "milvus.timeout", "30")
+    # --- Qdrant (non-secret connection settings) ---
+    qdrant_url = _v("QDRANT_URL", "qdrant.url", "")
+    qdrant_timeout_raw = _v("QDRANT_TIMEOUT", "qdrant.timeout", "30")
 
     # --- LangSmith (non-secret settings) ---
     langsmith_tracing_raw = _v("LANGSMITH_TRACING", "observability.langsmith.tracing", "false")
@@ -589,7 +589,7 @@ def load_config(command: str, config_path: Path | None = None) -> Config:
     langfuse_public_key = os.environ.get("LANGFUSE_PUBLIC_KEY") or None
     auth_tokens_raw = os.environ.get("AUTH_TOKENS") or ""
     auth_url = os.environ.get("AUTH_URL") or None
-    milvus_token = os.environ.get("MILVUS_TOKEN") or None
+    qdrant_api_key = os.environ.get("QDRANT_API_KEY") or None
     chroma_url = os.environ.get("CHROMA_URL") or None
     chroma_path = os.environ.get("CHROMA_PATH") or None
 
@@ -640,7 +640,7 @@ def load_config(command: str, config_path: Path | None = None) -> Config:
             keep_templates=keep_templates,
         )]
 
-    milvus_timeout = _parse_float(milvus_timeout_raw, default=30.0)
+    qdrant_timeout = _parse_float(qdrant_timeout_raw, default=30.0)
     rate_limiting = _parse_bool(rate_limiting_raw, default=True)
     embedding_dimensions = _parse_int(embedding_dimensions_raw)
     embedding_max_retries = _parse_int(embedding_max_retries_raw, default=3)
@@ -690,8 +690,8 @@ def load_config(command: str, config_path: Path | None = None) -> Config:
         )
         sys.exit(1)
     if not 0 < chunk_max_bytes <= 5000:
-        # 5000 is the vector-store "text" field storage limit (UTF-8 bytes),
-        # see wiki_rag/vector/milvus.py.
+        # 5000 is the historical "text" field storage limit (UTF-8 bytes); it
+        # bounds the size of the embedded text, see wiki_rag/index/util.py.
         logger.error(
             "INDEX_CHUNK_MAX_BYTES (index.chunking.max_bytes) must be between "
             "1 and 5000 (the storage field limit). Exiting."
@@ -786,7 +786,7 @@ def load_config(command: str, config_path: Path | None = None) -> Config:
             rate_limiting=rate_limiting,
         ),
         collection_name=str(collection_name or ""),
-        index_vendor=str(index_vendor or "milvus"),
+        index_vendor=str(index_vendor or "qdrant"),
         chunking=ChunkingConfig(
             strategy=chunk_strategy,
             max_bytes=chunk_max_bytes,
@@ -829,9 +829,9 @@ def load_config(command: str, config_path: Path | None = None) -> Config:
             api_base=str(mcp_api_base or ""),
             auth_required=mcp_auth_required,
         ),
-        milvus=MilvusConfig(
-            url=str(milvus_url),
-            timeout=milvus_timeout,
+        qdrant=QdrantConfig(
+            url=str(qdrant_url),
+            timeout=qdrant_timeout,
         ),
         langsmith=LangsmithConfig(
             tracing=langsmith_tracing,
@@ -853,7 +853,7 @@ def load_config(command: str, config_path: Path | None = None) -> Config:
         langfuse_public_key=langfuse_public_key,
         auth_tokens=auth_tokens,
         auth_url=auth_url,
-        milvus_token=milvus_token,
+        qdrant_api_key=qdrant_api_key,
         chroma_url=chroma_url,
         chroma_path=chroma_path,
     )

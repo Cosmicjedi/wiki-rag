@@ -1,7 +1,7 @@
 [project]
 name = "wiki-rag"
 description = "A simple RAG implementation using hybrid search with context optimisations against MediaWiki articles."
-keywords = ["rag", "llm", "hybrid", "search", "context", "milvus", "mediawiki", "ai", "research"]
+keywords = ["rag", "llm", "hybrid", "search", "context", "qdrant", "mediawiki", "ai", "research"]
 
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
@@ -38,9 +38,9 @@ dependencies = [
     "langgraph ~= 1.0.7",
     "langsmith ~= 0.6.4",
     "fastmcp ~= 2.14.4",
-    "pymilvus ~= 2.6.9",
     "python-dotenv ~= 1.2.1",
     "PyYAML ~= 6.0.2",
+    "qdrant-client ~= 1.19.1",
     "tiktoken ~= 0.12.0",
     "tqdm ~= 4.67.1",
     "uvicorn ~= 0.40.0",
@@ -125,7 +125,9 @@ max-line-length = 120
 
 [tool.codespell]
 ignore-words-list = [
-  "upport" # Part of regular expressions in cliff.toml
+  "upport", # Part of regular expressions in cliff.toml
+  "ative", "ment", # Porter stemmer suffix tables in wiki_rag/vector/bm25.py
+  "administr", "controll", "agre", "commun", "activ", # Porter stems asserted in tests/wiki_rag/vector/test_bm25.py
 ]
 
 [build-system]

@@ -13,7 +13,7 @@
 #   LANGSMITH_API_KEY
 #   LANGFUSE_SECRET_KEY, LANGFUSE_PUBLIC_KEY
 #   AUTH_TOKENS, AUTH_URL
-#   MILVUS_TOKEN
+#   QDRANT_API_KEY
 #   CHROMA_URL, CHROMA_PATH
 #
 # See dotenv.template for the list of expected secret environment variables.
@@ -111,8 +111,8 @@ collection:
 # Index / vector store
 # ---------------------------------------------------------------------------
 index:
-  # Vector-store backend. Currently supported: "milvus".
-  vendor: "milvus"
+  # Vector-store backend. Currently supported: "qdrant".
+  vendor: "qdrant"
 
   # Index-time section chunking. Sections longer than max_bytes are split
   # into multiple chunks (reassembled transparently at query time).
@@ -228,17 +228,16 @@ mcp:
   auth_required: true
 
 # ---------------------------------------------------------------------------
-# Milvus vector store (non-secret connection settings)
+# Qdrant vector store (non-secret connection settings)
 # ---------------------------------------------------------------------------
-milvus:
-  # Milvus server URL. Do NOT embed credentials here.
-  # Put credentials in the MILVUS_TOKEN environment variable instead.
-  # For backward compatibility, a URL with embedded credentials
-  # (https://user:password@host:port) still works via MILVUS_URL env var.  # pragma: allowlist secret
-  url: "http://0.0.0.0:19530"
-  # Timeout in seconds for Milvus client operations. When Milvus is unreachable,
+qdrant:
+  # Qdrant server URL (REST port, 6333 by default). Do NOT put an API key here;
+  # use the QDRANT_API_KEY environment variable instead.
+  # Env var: QDRANT_URL
+  url: "http://localhost:6333"
+  # Timeout in seconds for Qdrant client operations. When Qdrant is unreachable,
   # operations fail after this many seconds instead of blocking indefinitely.
-  # Env var: MILVUS_TIMEOUT
+  # Env var: QDRANT_TIMEOUT
   timeout: 30
 
 # ---------------------------------------------------------------------------

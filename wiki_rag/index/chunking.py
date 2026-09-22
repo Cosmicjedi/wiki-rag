@@ -4,7 +4,7 @@
 """Section chunking strategies applied at index time.
 
 All limits are measured in UTF-8 **bytes**, not characters, because the
-vector-store varchar limits are byte-based (see the Milvus ``text`` field).
+the ``text`` storage limit is byte-based (5000 UTF-8 bytes per chunk).
 Splits never break a multi-byte codepoint and prefer whitespace boundaries.
 """
 

@@ -118,7 +118,7 @@ class TestIndexPagesSkipsEmptySections(unittest.TestCase):
 
 
 class TestIndexPagesTrimsTextToByteLimit(unittest.TestCase):
-    """index_pages() must trim section text to the Milvus varchar byte limit."""
+    """index_pages() must trim section text to the 5000-byte storage limit."""
 
     @patch("wiki_rag.index.util.vector")
     @patch("wiki_rag.index.util.OpenAIEmbeddings")
